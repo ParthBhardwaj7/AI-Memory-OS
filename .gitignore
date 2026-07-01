@@ -1,0 +1,30 @@
+# Root-level .gitignore for AI Memory OS monorepo
+
+# Frontend Next.js build and dependencies
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/.env*.local
+
+# Backend python virtual environment and files
+backend/venv/
+backend/__pycache__/
+backend/*.py[cod]
+backend/uploads/*
+!backend/uploads/.gitkeep
+backend/.cognee_cache/
+backend/.cognee/
+backend/cognee.db
+backend/lancedb/
+backend/sqlite/
+backend/.env
+
+# General system files
+.DS_Store
+Thumbs.db
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
