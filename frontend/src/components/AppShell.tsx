@@ -21,11 +21,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }, [userId, pathname, router]);
 
   return (
-    <div className="h-full min-h-screen bg-slate-950 text-slate-100">
+    <div className="h-full min-h-screen bg-white text-slate-900">
       {showSidebar ? (
         <div className="flex h-full">
           <Sidebar />
-          <main className="flex-1 overflow-y-auto bg-slate-950">{children}</main>
+          <main className="flex-1 overflow-y-auto bg-white">{children}</main>
         </div>
       ) : (
         <main className="min-h-screen">{children}</main>

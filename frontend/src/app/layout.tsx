@@ -27,7 +27,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} h-full bg-slate-950 text-slate-100 selection:bg-indigo-500/30 selection:text-indigo-200 antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} h-full bg-white text-slate-900 selection:bg-teal-200 selection:text-slate-950 antialiased`}
       >
         <AuthProvider>
           <AppShell>{children}</AppShell>

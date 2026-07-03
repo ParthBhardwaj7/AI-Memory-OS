@@ -72,13 +72,13 @@ export default function MemoryGraphPage() {
   return (
     <div className="flex flex-col h-screen p-6">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
+      <div className="flex items-center justify-between border-b border-slate-200 pb-4 mb-4">
         <div className="flex items-center space-x-3">
-          <div className="p-2 bg-indigo-600/10 border border-indigo-500/20 text-indigo-400 rounded-lg">
+          <div className="p-2 bg-teal-100 border border-teal-200 text-teal-700 rounded-lg">
             <Brain className="h-6 w-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-white">Memory Knowledge Graph</h1>
+            <h1 className="text-2xl font-bold text-slate-900">Memory Knowledge Graph</h1>
             <p className="text-xs text-slate-500">Visual mapping of cognitive connections extracted by Cognee</p>
           </div>
         </div>
@@ -86,7 +86,7 @@ export default function MemoryGraphPage() {
         <button
           onClick={fetchGraphData}
           disabled={loading}
-          className="flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-850 border border-slate-800 text-xs font-semibold text-slate-300 transition-colors duration-200"
+          className="flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-white hover:bg-blue-50 border border-slate-200 text-xs font-semibold text-slate-900 transition-colors duration-200"
         >
           <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
           <span>Refresh Graph</span>
@@ -94,10 +94,10 @@ export default function MemoryGraphPage() {
       </div>
 
       {/* Canvas Area */}
-      <div className="flex-1 bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden relative">
+      <div className="flex-1 bg-slate-50 border border-slate-200 rounded-2xl overflow-hidden relative">
         {loading ? (
-          <div className="absolute inset-0 bg-slate-950/80 flex items-center justify-center space-x-2 text-indigo-400 text-sm font-semibold z-10">
-            <span className="h-4 w-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin"></span>
+          <div className="absolute inset-0 bg-white/95 flex items-center justify-center space-x-2 text-teal-700 text-sm font-semibold z-10">
+            <span className="h-4 w-4 border-2 border-teal-700 border-t-transparent rounded-full animate-spin"></span>
             <span>Loading cognitive relationships...</span>
           </div>
         ) : nodes.length === 0 ? (
@@ -116,11 +116,11 @@ export default function MemoryGraphPage() {
           minZoom={0.5}
           maxZoom={1.5}
         >
-          <Controls className="bg-slate-900 border border-slate-850 rounded text-slate-100 fill-slate-100" />
+          <Controls className="bg-white border border-slate-200 rounded text-slate-900 fill-slate-900" />
           <MiniMap 
-            nodeColor="#312e81"
-            maskColor="rgba(15, 23, 42, 0.6)"
-            className="bg-slate-900 border border-slate-800 rounded"
+            nodeColor="#0f766e"
+            maskColor="rgba(255, 255, 255, 0.85)"
+            className="bg-white border border-slate-200 rounded"
           />
           <Background color="#334155" gap={16} />
         </ReactFlow>
