@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@/components/AuthProvider";
 import { 
   LayoutDashboard, 
   UploadCloud, 
@@ -13,6 +14,7 @@ import {
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { userId, username, logout } = useAuth();
 
   const navItems = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
@@ -57,14 +59,33 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* User Footer Stub */}
-      <div className="p-4 border-t border-slate-800 flex items-center space-x-3">
-        <div className="h-9 w-9 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center font-semibold text-white">
-          U
-        </div>
-        <div>
-          <p className="text-sm font-semibold">Hackathon User</p>
-          <p className="text-xs text-slate-500">default-user</p>
+      {/* User Footer */}
+      <div className="p-4 border-t border-slate-800">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center font-semibold text-white">
+              {username?.[0]?.toUpperCase() ?? "U"}
+            </div>
+            <div>
+              <p className="text-sm font-semibold">{username ? `Hello, ${username}` : "Guest"}</p>
+              <p className="text-xs text-slate-500">{userId ?? "not signed in"}</p>
+            </div>
+          </div>
+          {userId ? (
+            <button
+              onClick={logout}
+              className="rounded-full bg-slate-800 px-3 py-1 text-xs font-semibold text-slate-200 hover:bg-slate-700"
+            >
+              Logout
+            </button>
+          ) : (
+            <Link
+              href="/login"
+              className="rounded-full bg-indigo-600 px-3 py-1 text-xs font-semibold text-white hover:bg-indigo-500"
+            >
+              Login
+            </Link>
+          )}
         </div>
       </div>
     </aside>

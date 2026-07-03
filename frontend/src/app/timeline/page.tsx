@@ -19,11 +19,6 @@ export default function TimelinePage() {
   const [timeline, setTimeline] = useState<TimelineData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // TODO IMPLEMENTATION STEPS FOR DEVELOPER 2:
-  // 1. Fetch timeline events using `memoryApi.getTimeline()`.
-  // 2. Map and format the backend timeline payload structure.
-  // 3. Render appropriate icons for each Category (e.g. PDF icon for PDF, Link icon for URL).
-
   useEffect(() => {
     const fetchTimelineData = async () => {
       try {

@@ -21,11 +21,6 @@ export default function UploadPage() {
   const [uploading, setUploading] = useState(false);
   const [status, setStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
-  // TODO IMPLEMENTATION STEPS FOR DEVELOPER 2:
-  // 1. Hook up the file drop callbacks to `memoryApi.uploadPdf`, `memoryApi.uploadImage`, or `memoryApi.uploadAudio`.
-  // 2. Hook up URL submission to `memoryApi.uploadUrl`.
-  // 3. Render file upload progress or success indicators.
-
   const onDrop = async (acceptedFiles: File[]) => {
     if (acceptedFiles.length === 0) return;
     const file = acceptedFiles[0];

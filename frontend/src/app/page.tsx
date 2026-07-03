@@ -25,11 +25,6 @@ export default function Dashboard() {
   const [digest, setDigest] = useState<string | null>(null);
   const [summary, setSummary] = useState<string | null>(null);
 
-  // TODO IMPLEMENTATION STEPS FOR DEVELOPER 2:
-  // 1. Fetch memory count statistics from the backend (Supabase database references).
-  // 2. Fetch the overall profile summary using `memoryApi.getOverallSummary()`.
-  // 3. Connect the "Generate Daily Digest" button to trigger `memoryApi.getDailyDigest()`.
-  
   useEffect(() => {
     // Load overall summary on mount
     const loadSummary = async () => {
