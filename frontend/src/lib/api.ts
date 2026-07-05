@@ -11,16 +11,6 @@ export const apiClient = axios.create({
   },
 });
 
-/**
- * API methods to communicate with the FastAPI backend.
- * 
- * TODO IMPLEMENTATION STEPS FOR DEVELOPER 2:
- * 1. Implement multipart form data uploads for PDF, Image, and Audio files.
- * 2. Connect the `queryMemory` API call to the `/chat` route.
- * 3. Fetch graph nodes and edges via `/graph/{userId}`.
- * 4. Fetch timeline categorized events via `/timeline/{userId}`.
- * 5. Fetch summaries and digests via `/summary/...`.
- */
 export const memoryApi = {
   // Check if API is alive
   checkHealth: async () => {

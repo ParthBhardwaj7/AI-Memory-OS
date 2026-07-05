@@ -21,11 +21,6 @@ export default function UploadPage() {
   const [uploading, setUploading] = useState(false);
   const [status, setStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
-  // TODO IMPLEMENTATION STEPS FOR DEVELOPER 2:
-  // 1. Hook up the file drop callbacks to `memoryApi.uploadPdf`, `memoryApi.uploadImage`, or `memoryApi.uploadAudio`.
-  // 2. Hook up URL submission to `memoryApi.uploadUrl`.
-  // 3. Render file upload progress or success indicators.
-
   const onDrop = async (acceptedFiles: File[]) => {
     if (acceptedFiles.length === 0) return;
     const file = acceptedFiles[0];
@@ -98,12 +93,12 @@ export default function UploadPage() {
   return (
     <div className="p-8 max-w-4xl mx-auto space-y-8">
       <div>
-        <h1 className="text-3xl font-extrabold tracking-tight text-white mb-2">Ingest Memories</h1>
-        <p className="text-slate-400">Add documents, images, audio records, or website articles to build your AI memory base.</p>
+        <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 mb-2">Ingest Memories</h1>
+        <p className="text-slate-600">Add documents, images, audio records, or website articles to build your AI memory base.</p>
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-slate-800 bg-slate-900/50 p-1.5 rounded-lg">
+      <div className="flex border-b border-slate-200 bg-slate-50 p-1.5 rounded-lg shadow-sm">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -116,8 +111,8 @@ export default function UploadPage() {
               }}
               className={`flex-1 flex items-center justify-center space-x-2 py-2 px-3 rounded-md text-sm font-semibold transition-all duration-200 ${
                 isActive 
-                  ? "bg-indigo-600 text-white shadow-lg" 
-                  : "text-slate-400 hover:text-slate-200"
+                  ? "bg-teal-600 text-white shadow-lg" 
+                  : "text-slate-600 hover:text-slate-900"
               }`}
             >
               <Icon className="h-4 w-4" />
@@ -131,8 +126,8 @@ export default function UploadPage() {
       {status && (
         <div className={`p-4 rounded-xl border flex items-center space-x-3 ${
           status.type === "success" 
-            ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" 
-            : "bg-rose-500/10 border-rose-500/20 text-rose-400"
+            ? "bg-emerald-50 border-emerald-200 text-emerald-600" 
+            : "bg-rose-50 border-rose-200 text-rose-600"
         }`}>
           {status.type === "success" ? <CheckCircle className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
           <span className="text-sm font-medium">{status.message}</span>
@@ -140,7 +135,7 @@ export default function UploadPage() {
       )}
 
       {/* Form / Dropzone Section */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8">
+      <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm">
         {activeTab === "url" ? (
           <form onSubmit={handleUrlSubmit} className="space-y-4">
             <label className="block text-sm font-semibold text-slate-300">Target Web URL</label>
@@ -151,12 +146,12 @@ export default function UploadPage() {
                 placeholder="https://example.com/article-name"
                 value={urlInput}
                 onChange={(e) => setUrlInput(e.target.value)}
-                className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500"
+                className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-900 placeholder-slate-500 focus:outline-none focus:border-teal-500"
               />
               <button
                 type="submit"
                 disabled={uploading}
-                className="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition-all duration-200 disabled:opacity-50"
+                className="px-6 py-3 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold transition-all duration-200 disabled:opacity-50"
               >
                 {uploading ? "Scraping..." : "Scrape URL"}
               </button>
@@ -168,19 +163,19 @@ export default function UploadPage() {
             {...getRootProps()} 
             className={`border-2 border-dashed rounded-2xl p-12 flex flex-col items-center justify-center cursor-pointer transition-all duration-200 ${
               isDragActive 
-                ? "border-indigo-500 bg-indigo-500/5" 
-                : "border-slate-800 hover:border-slate-700 hover:bg-slate-950/20"
+                ? "border-teal-500 bg-teal-500/10" 
+                : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
             }`}
           >
             <input {...getInputProps()} />
-            <UploadCloud className="h-12 w-12 text-slate-500 mb-4 animate-bounce" />
-            <p className="text-lg font-bold text-slate-300 mb-1">
+            <UploadCloud className="h-12 w-12 text-teal-600 mb-4 animate-bounce" />
+            <p className="text-lg font-bold text-slate-900 mb-1">
               {isDragActive ? "Drop the file here..." : "Drag and drop your file here"}
             </p>
             <p className="text-sm text-slate-500 mb-4">
               or click to browse your local computer
             </p>
-            <span className="text-xs px-3 py-1 bg-slate-800 text-slate-400 rounded-full font-medium">
+            <span className="text-xs px-3 py-1 bg-slate-100 text-slate-600 rounded-full font-medium">
               Supported file: {activeTab.toUpperCase()}
             </span>
           </div>
@@ -188,8 +183,8 @@ export default function UploadPage() {
 
         {/* Upload Loading Overlay */}
         {uploading && activeTab !== "url" && (
-          <div className="mt-4 flex items-center justify-center space-x-2 text-indigo-400 text-sm font-semibold">
-            <span className="h-4 w-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin"></span>
+          <div className="mt-4 flex items-center justify-center space-x-2 text-teal-700 text-sm font-semibold">
+            <span className="h-4 w-4 border-2 border-teal-700 border-t-transparent rounded-full animate-spin"></span>
             <span>Uploading & Cognifying Memory. Please wait...</span>
           </div>
         )}

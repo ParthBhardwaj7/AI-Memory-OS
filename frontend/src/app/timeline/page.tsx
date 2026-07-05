@@ -19,11 +19,6 @@ export default function TimelinePage() {
   const [timeline, setTimeline] = useState<TimelineData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // TODO IMPLEMENTATION STEPS FOR DEVELOPER 2:
-  // 1. Fetch timeline events using `memoryApi.getTimeline()`.
-  // 2. Map and format the backend timeline payload structure.
-  // 3. Render appropriate icons for each Category (e.g. PDF icon for PDF, Link icon for URL).
-
   useEffect(() => {
     const fetchTimelineData = async () => {
       try {
@@ -53,32 +48,32 @@ export default function TimelinePage() {
 
   const getCategoryColor = (category: string) => {
     switch (category.toLowerCase()) {
-      case "pdf": return "text-emerald-400 bg-emerald-500/10 border-emerald-500/20";
-      case "image": return "text-purple-400 bg-purple-500/10 border-purple-500/20";
-      case "audio": return "text-amber-400 bg-amber-500/10 border-amber-500/20";
-      case "url": return "text-rose-400 bg-rose-500/10 border-rose-500/20";
-      default: return "text-slate-400 bg-slate-500/10 border-slate-500/20";
+      case "pdf": return "text-teal-600 bg-teal-100 border-teal-200";
+      case "image": return "text-blue-600 bg-blue-100 border-blue-200";
+      case "audio": return "text-emerald-600 bg-emerald-100 border-emerald-200";
+      case "url": return "text-cyan-600 bg-cyan-100 border-cyan-200";
+      default: return "text-slate-500 bg-slate-100 border-slate-200";
     }
   };
 
   return (
     <div className="p-8 max-w-4xl mx-auto space-y-8">
       <div>
-        <h1 className="text-3xl font-extrabold tracking-tight text-white mb-2">Memory Timeline</h1>
-        <p className="text-slate-400">Track and review the chronological order in which your brain ingested knowledge.</p>
+        <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 mb-2">Memory Timeline</h1>
+        <p className="text-slate-600">Track and review the chronological order in which your brain ingested knowledge.</p>
       </div>
 
       {loading ? (
-        <div className="flex items-center space-x-2 text-indigo-400 text-sm font-semibold py-12 justify-center">
-          <span className="h-4 w-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin"></span>
+        <div className="flex items-center space-x-2 text-teal-700 text-sm font-semibold py-12 justify-center">
+          <span className="h-4 w-4 border-2 border-teal-700 border-t-transparent rounded-full animate-spin"></span>
           <span>Loading timeline records...</span>
         </div>
       ) : timeline && Object.keys(timeline).length > 0 ? (
         <div className="space-y-12">
           {Object.entries(timeline).map(([period, events]) => (
-            <div key={period} className="relative pl-6 border-l border-slate-800 space-y-6">
+            <div key={period} className="relative pl-6 border-l border-slate-200 space-y-6">
               {/* Period marker */}
-              <div className="absolute -left-[9px] top-0 px-2 py-0.5 rounded-full bg-slate-900 border border-slate-800 text-[10px] uppercase font-bold tracking-wider text-slate-400">
+              <div className="absolute -left-[9px] top-0 px-2 py-0.5 rounded-full bg-white border border-slate-200 text-[10px] uppercase font-bold tracking-wider text-slate-500">
                 {period}
               </div>
 
@@ -90,14 +85,14 @@ export default function TimelinePage() {
                   return (
                     <div 
                       key={index} 
-                      className="bg-slate-900 border border-slate-800 rounded-xl p-5 flex items-start space-x-4 transition-all duration-200 hover:border-slate-700"
+                      className="bg-white border border-slate-200 rounded-xl p-5 flex items-start space-x-4 transition-all duration-200 hover:border-slate-300 shadow-sm"
                     >
                       <div className={`p-2.5 rounded-lg border ${colorClass}`}>
                         <Icon className="h-5 w-5" />
                       </div>
                       <div className="flex-1">
                         <div className="flex justify-between items-center mb-1">
-                          <h3 className="font-bold text-white text-base">{event.title}</h3>
+                          <h3 className="font-bold text-slate-900 text-base">{event.title}</h3>
                           <span className="text-xs text-slate-500 font-medium">{event.time}</span>
                         </div>
                         <p className="text-slate-400 text-sm">{event.desc}</p>
@@ -110,9 +105,9 @@ export default function TimelinePage() {
           ))}
         </div>
       ) : (
-        <div className="text-center py-12 border border-dashed border-slate-800 rounded-2xl">
-          <Clock className="h-12 w-12 text-slate-500 mx-auto mb-4" />
-          <p className="text-slate-400 font-medium">No timeline events found. Start by uploading documents!</p>
+        <div className="text-center py-12 border border-dashed border-slate-200 rounded-2xl bg-slate-50">
+          <Clock className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+          <p className="text-slate-600 font-medium">No timeline events found. Start by uploading documents!</p>
         </div>
       )}
     </div>
