@@ -1,8 +1,11 @@
 fastapi
-uvicorn
+uvicorn[standard]
 python-multipart
 openai
 cognee
 supabase
 beautifulsoup4
 requests
+passlib[bcrypt]
+python-jose[cryptography]
+httpx

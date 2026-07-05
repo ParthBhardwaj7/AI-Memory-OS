@@ -1,0 +1,34 @@
+services:
+  - type: web
+    name: ai-memory-os-backend
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: COGNEE_API_URL
+        sync: false
+      - key: COGNEE_API_KEY
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      - key: LLM_PROVIDER
+        value: custom
+      - key: LLM_ENDPOINT
+        value: https://openrouter.ai/api/v1
+      - key: LLM_API_KEY
+        sync: false
+      - key: LLM_MODEL
+        value: google/gemini-2.5-flash
+      - key: EMBEDDING_PROVIDER
+        value: custom
+      - key: EMBEDDING_ENDPOINT
+        value: https://openrouter.ai/api/v1
+      - key: EMBEDDING_API_KEY
+        sync: false
+      - key: EMBEDDING_MODEL
+        value: openrouter/openai/text-embedding-3-small
+      - key: EMBEDDING_DIMENSIONS
+        value: "1536"
