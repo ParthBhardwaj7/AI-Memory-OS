@@ -21,8 +21,9 @@ export default function TimelinePage() {
 
   useEffect(() => {
     const fetchTimelineData = async () => {
+      const activeUserId = localStorage.getItem("userId") || "default-user";
       try {
-        const res = await memoryApi.getTimeline("default-user");
+        const res = await memoryApi.getTimeline(activeUserId);
         if (res.status === "success") {
           setTimeline(res.timeline);
         }

@@ -25,11 +25,27 @@ export default function Dashboard() {
   const [digest, setDigest] = useState<string | null>(null);
   const [summary, setSummary] = useState<string | null>(null);
 
+
+  const [userId, setUserId] = useState("default-user");
+  
   useEffect(() => {
-    // Load overall summary on mount
-    const loadSummary = async () => {
+    const activeUserId = localStorage.getItem("userId") || "default-user";
+    setUserId(activeUserId);
+
+    const loadData = async () => {
+      // Load document counts
       try {
-        const res = await memoryApi.getOverallSummary("default-user");
+        const res = await memoryApi.getStats(activeUserId);
+        if (res.status === "success") {
+          setStats(res.stats);
+        }
+      } catch (err) {
+        console.error("Failed to load stats:", err);
+      }
+
+      // Load overall AI summary
+      try {
+        const res = await memoryApi.getOverallSummary(activeUserId);
         if (res.status === "success") {
           setSummary(res.summary);
         }
@@ -37,13 +53,14 @@ export default function Dashboard() {
         console.error("Failed to load overall summary:", err);
       }
     };
-    loadSummary();
+    
+    loadData();
   }, []);
 
   const handleGenerateDigest = async () => {
     setLoadingDigest(true);
     try {
-      const res = await memoryApi.getDailyDigest("default-user");
+      const res = await memoryApi.getDailyDigest(userId);
       if (res.status === "success") {
         setDigest(res.digest);
       }

@@ -1,5 +1,7 @@
 import os
 import shutil
+import base64
+import openai
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from services.cognee_service import CogneeService
 from services.transcribing import AudioTranscriber
@@ -16,30 +18,38 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 async def upload_pdf(file: UploadFile = File(...), user_id: str = Form("default-user")):
     """
     POST /upload/pdf
-    
-    TODO IMPLEMENTATION STEPS:
-    1. Validate that the file is a PDF (check content_type or extension).
-    2. Save the file to the local `uploads/` directory.
-    3. Call `CogneeService.ingest_text` or `CogneeService.ingest_file` to process the document.
-    4. Log the document details (filename, path, size) in Supabase via `SupabaseDB.log_document`.
-    5. Log a timeline event in Supabase: "Uploaded PDF [filename]".
-    6. Return a success response with the status and parsed message.
+    Saves PDF locally, indexes it in Cognee, and updates Supabase documents and timeline tables.
     """
     if not file.filename.endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are allowed")
     
     file_path = os.path.join(UPLOAD_DIR, file.filename)
+    doc_record = None
     try:
-        # Save file locally
+        # 1. Save the file locally
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
         
-        # Cognee ingestion placeholder
-        # CogneeService.ingest_pdf(file_path, user_id)
+        # 2. Log initial "processing" record to Supabase
+        file_size = os.path.getsize(file_path)
+        doc_record = SupabaseDB.log_document(user_id, file.filename, file_path, "PDF", file_size)
         
-        # Supabase logging placeholders
-        # SupabaseDB.log_document(user_id, file.filename, file_path, "PDF", os.path.getsize(file_path))
-        # SupabaseDB.add_timeline_event(user_id, f"Uploaded {file.filename}", "PDF", f"Ingested PDF into cognitive memory")
+        # 3. Index PDF in Cognee Cloud
+        success = await CogneeService.ingest_file(file_path, user_id)
+        
+        if not success:
+            raise Exception("Cognee failed to cognify PDF file.")
+            
+        # 4. Update status to completed and create timeline log
+        if doc_record:
+            SupabaseDB.update_document_status(doc_record["id"], "completed")
+            
+        SupabaseDB.add_timeline_event(
+            user_id=user_id,
+            title=f"Uploaded {file.filename}",
+            category="PDF",
+            description=f"Ingested document '{file.filename}' ({file_size} bytes) successfully into cognitive graph."
+        )
         
         return {
             "status": "success",
@@ -47,34 +57,86 @@ async def upload_pdf(file: UploadFile = File(...), user_id: str = Form("default-
             "filename": file.filename
         }
     except Exception as e:
+        if doc_record:
+            SupabaseDB.update_document_status(doc_record["id"], "failed")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/image")
 async def upload_image(file: UploadFile = File(...), user_id: str = Form("default-user")):
     """
     POST /upload/image
-    
-    TODO IMPLEMENTATION STEPS:
-    1. Validate that the file is an image.
-    2. Save the file to the `uploads/` directory.
-    3. (Optional) Run OCR on the image to extract text, or pass image description to Cognee.
-    4. Ingest text/image data into Cognee memory space.
-    5. Log the metadata and save a timeline event: "Uploaded Image [filename]".
+    Uses OpenRouter Vision to perform OCR, ingests text to Cognee, and records logs in Supabase.
     """
     file_path = os.path.join(UPLOAD_DIR, file.filename)
+    doc_record = None
     try:
+        # 1. Save image locally
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
+            
+        file_size = os.path.getsize(file_path)
+        doc_record = SupabaseDB.log_document(user_id, file.filename, file_path, "Image", file_size)
+
+        # 2. Extract text from image via base64 LLM vision API (glowing cloud OCR)
+        extracted_text = ""
+        api_key = os.environ.get("LLM_API_KEY")
+        if api_key:
+            try:
+                with open(file_path, "rb") as image_file:
+                    base64_image = base64.b64encode(image_file.read()).decode('utf-8')
+                
+                # Check for image type extensions
+                mime_type = "image/png" if file.filename.endswith(".png") else "image/jpeg"
+                
+                client = openai.OpenAI(
+                    base_url="https://openrouter.ai/api/v1",
+                    api_key=api_key
+                )
+                
+                # We use google/gemini-2.5-flash as default since it handles multimodal vision excellently
+                response = client.chat.completions.create(
+                    model="google/gemini-2.5-flash",
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": [
+                                {
+                                    "type": "text",
+                                    "text": "Extract all readable text, words, and context from this screenshot/image. Do not describe the image, only output the extracted text verbatim. If no text exists, return an empty string."
+                                },
+                                {
+                                    "type": "image_url",
+                                    "image_url": {
+                                        "url": f"data:{mime_type};base64,{base64_image}"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                )
+                extracted_text = response.choices[0].message.content.strip()
+            except Exception as ocr_err:
+                print(f"Cloud OCR failed, using fallback filename text: {ocr_err}")
         
-        # TODO: Implement OCR / Image description logic here
-        extracted_text = f"Image upload: {file.filename}"
+        if not extracted_text:
+            extracted_text = f"Image memory upload: {file.filename} (OCR text empty)"
+
+        # 3. Index text in Cognee
+        await CogneeService.ingest_text(extracted_text, user_id)
         
-        # Ingest memory
-        # CogneeService.ingest_text(extracted_text, user_id)
+        # 4. Save metadata
+        if doc_record:
+            SupabaseDB.update_document_status(doc_record["id"], "completed")
+            
+        # Log to memories table
+        SupabaseDB.log_memory(user_id, extracted_text, doc_record.get("id") if doc_record else None, "Image")
         
-        # Log to Supabase
-        # SupabaseDB.log_document(user_id, file.filename, file_path, "Image", os.path.getsize(file_path))
-        # SupabaseDB.add_timeline_event(user_id, f"Uploaded Image {file.filename}", "Image", "Processed image memory")
+        SupabaseDB.add_timeline_event(
+            user_id=user_id,
+            title=f"Uploaded Image {file.filename}",
+            category="Image",
+            description=f"Processed image memory. Extracted text: {extracted_text[:100]}..."
+        )
         
         return {
             "status": "success",
@@ -82,34 +144,45 @@ async def upload_image(file: UploadFile = File(...), user_id: str = Form("defaul
             "extracted_text": extracted_text
         }
     except Exception as e:
+        if doc_record:
+            SupabaseDB.update_document_status(doc_record["id"], "failed")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/audio")
 async def upload_audio(file: UploadFile = File(...), user_id: str = Form("default-user")):
     """
     POST /upload/audio
-    
-    TODO IMPLEMENTATION STEPS:
-    1. Save the audio file (.mp3, .wav, etc.) to the `uploads/` directory.
-    2. Call `AudioTranscriber.transcribe_audio(file_path)` to get text transcripts.
-    3. Ingest the transcribed text into Cognee memory.
-    4. Log the document details and insert a timeline event: "Transcribed meeting recording".
+    Transcribes audio speech-to-text, indexes transcript in Cognee, and updates Supabase.
     """
     file_path = os.path.join(UPLOAD_DIR, file.filename)
+    doc_record = None
     try:
+        # 1. Save audio locally
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
+            
+        file_size = os.path.getsize(file_path)
+        doc_record = SupabaseDB.log_document(user_id, file.filename, file_path, "Audio", file_size)
+
+        # 2. Transcribe speech to text
+        transcript = AudioTranscriber.transcribe_audio(file_path)
+
+        # 3. Index text in Cognee
+        await CogneeService.ingest_text(transcript, user_id)
         
-        # Transcribe audio using Whisper or Gemini API
-        # transcript = AudioTranscriber.transcribe_audio(file_path)
-        transcript = "Sample audio transcript: This meeting discussed next steps for project development."
+        # 4. Save metadata
+        if doc_record:
+            SupabaseDB.update_document_status(doc_record["id"], "completed")
+            
+        # Log to memories table
+        SupabaseDB.log_memory(user_id, transcript, doc_record.get("id") if doc_record else None, "Audio")
         
-        # Ingest memory
-        # CogneeService.ingest_text(transcript, user_id)
-        
-        # Log to Supabase
-        # SupabaseDB.log_document(user_id, file.filename, file_path, "Audio", os.path.getsize(file_path))
-        # SupabaseDB.add_timeline_event(user_id, f"Transcribed Audio {file.filename}", "Audio", "Ingested meeting notes")
+        SupabaseDB.add_timeline_event(
+            user_id=user_id,
+            title=f"Transcribed Audio {file.filename}",
+            category="Audio",
+            description=f"Ingested speech recording notes. Transcript: {transcript[:100]}..."
+        )
         
         return {
             "status": "success",
@@ -117,36 +190,50 @@ async def upload_audio(file: UploadFile = File(...), user_id: str = Form("defaul
             "transcript": transcript
         }
     except Exception as e:
+        if doc_record:
+            SupabaseDB.update_document_status(doc_record["id"], "failed")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/url")
 async def upload_url(url: str = Form(...), user_id: str = Form("default-user")):
     """
     POST /upload/url
-    
-    TODO IMPLEMENTATION STEPS:
-    1. Fetch the webpage using requests.
-    2. Call `WebScraper.scrape(url)` using BeautifulSoup to scrape article body text.
-    3. Ingest the parsed text contents into Cognee cognitive memory.
-    4. Log the URL details in database documents.
-    5. Log a timeline event: "Bookmarked Web Page".
+    Scrapes website text, indexes it in Cognee, and updates Supabase.
     """
+    doc_record = None
     try:
-        # Scrape web content
-        # page_content = WebScraper.scrape(url)
-        page_content = f"Scraped content from webpage: {url}"
+        # 1. Log initial "processing" record
+        doc_record = SupabaseDB.log_document(user_id, url, url, "URL", 0)
+
+        # 2. Scrape website body content
+        scraped_text = WebScraper.scrape(url)
+        if scraped_text.startswith("Failed") or scraped_text.startswith("Error"):
+            raise Exception(scraped_text)
+
+        # 3. Index parsed text in Cognee
+        await CogneeService.ingest_text(scraped_text, user_id)
         
-        # Ingest into Cognee
-        # CogneeService.ingest_text(page_content, user_id)
+        # 4. Save metadata
+        if doc_record:
+            # Update size to matched text length and change status to completed
+            SupabaseDB.update_document_status(doc_record["id"], "completed")
+            
+        # Log to memories table
+        SupabaseDB.log_memory(user_id, scraped_text, doc_record.get("id") if doc_record else None, "URL")
         
-        # Log to Supabase
-        # SupabaseDB.log_document(user_id, url, url, "URL", len(page_content))
-        # SupabaseDB.add_timeline_event(user_id, f"Saved URL: {url}", "URL", "Bookmarked content details stored")
+        SupabaseDB.add_timeline_event(
+            user_id=user_id,
+            title=f"Bookmarked URL",
+            category="URL",
+            description=f"Scraped and indexed webpage: {url[:60]}... Extracted {len(scraped_text)} characters."
+        )
         
         return {
             "status": "success",
             "message": f"URL {url} scraped and ingested successfully",
-            "scraped_snippet": page_content[:150]
+            "scraped_snippet": scraped_text[:150]
         }
     except Exception as e:
+        if doc_record:
+            SupabaseDB.update_document_status(doc_record["id"], "failed")
         raise HTTPException(status_code=500, detail=str(e))

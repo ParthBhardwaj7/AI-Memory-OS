@@ -25,8 +25,9 @@ export default function MemoryGraphPage() {
 
   const fetchGraphData = async () => {
     setLoading(true);
+    const activeUserId = localStorage.getItem("userId") || "default-user";
     try {
-      const res = await memoryApi.getGraph("default-user");
+      const res = await memoryApi.getGraph(activeUserId);
       if (res.status === "success") {
         // Format edges with standard markers (arrows) if desired
         const formattedEdges = res.edges.map((edge: any) => ({

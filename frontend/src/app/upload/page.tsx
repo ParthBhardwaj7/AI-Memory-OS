@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
 import { 
   FileText, 
@@ -20,33 +20,56 @@ export default function UploadPage() {
   const [urlInput, setUrlInput] = useState("");
   const [uploading, setUploading] = useState(false);
   const [status, setStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [userId, setUserId] = useState("default-user");
+
+
+  useEffect(() => {
+    const activeUserId = localStorage.getItem("userId");
+    if (activeUserId) {
+      setUserId(activeUserId);
+    }
+  }, []);
 
   const onDrop = async (acceptedFiles: File[]) => {
     if (acceptedFiles.length === 0) return;
-    const file = acceptedFiles[0];
     setUploading(true);
     setStatus(null);
 
-    try {
-      let res;
-      if (activeTab === "pdf") {
-        res = await memoryApi.uploadPdf(file);
-      } else if (activeTab === "image") {
-        res = await memoryApi.uploadImage(file);
-      } else if (activeTab === "audio") {
-        res = await memoryApi.uploadAudio(file);
+    let successCount = 0;
+    let failedCount = 0;
+
+    for (const file of acceptedFiles) {
+      try {
+        let res;
+        if (activeTab === "pdf") {
+          res = await memoryApi.uploadPdf(file, userId);
+        } else if (activeTab === "image") {
+          res = await memoryApi.uploadImage(file, userId);
+        } else if (activeTab === "audio") {
+          res = await memoryApi.uploadAudio(file, userId);
+        }
+        
+        if (res && res.status === "success") {
+          successCount++;
+        } else {
+          failedCount++;
+        }
+      } catch (err) {
+        console.error(`Upload failed for ${file.name}:`, err);
+        failedCount++;
       }
-      
-      if (res && res.status === "success") {
-        setStatus({ type: "success", message: res.message });
-      } else {
-        setStatus({ type: "error", message: "Failed to process document memory." });
-      }
-    } catch (err: any) {
-      console.error(err);
-      setStatus({ type: "error", message: err.response?.data?.detail || "Upload error occurred" });
-    } finally {
-      setUploading(false);
+    }
+
+    setUploading(false);
+    if (failedCount === 0) {
+      setStatus({ type: "success", message: `Successfully processed all ${successCount} file(s) into memory!` });
+    } else if (successCount > 0) {
+      setStatus({ 
+        type: "success", 
+        message: `Successfully processed ${successCount} file(s). Failed for ${failedCount} file(s).` 
+      });
+    } else {
+      setStatus({ type: "error", message: `Failed to process all ${failedCount} file(s).` });
     }
   };
 
@@ -58,7 +81,7 @@ export default function UploadPage() {
     setStatus(null);
 
     try {
-      const res = await memoryApi.uploadUrl(urlInput);
+      const res = await memoryApi.uploadUrl(urlInput, userId);
       if (res && res.status === "success") {
         setStatus({ type: "success", message: res.message });
         setUrlInput("");
@@ -75,7 +98,7 @@ export default function UploadPage() {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    multiple: false,
+    multiple: true,
     accept: activeTab === "pdf" 
       ? { "application/pdf": [".pdf"] }
       : activeTab === "image"

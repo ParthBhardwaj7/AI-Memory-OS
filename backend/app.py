@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routes import upload, chat, timeline, graph, summary
+from routes import upload, chat, timeline, graph, summary, auth
 
 app = FastAPI(
     title="AI Memory OS API",
@@ -18,6 +18,7 @@ app.add_middleware(
 )
 
 # TODO: Include routers for different features
+app.include_router(auth.router, prefix="/auth", tags=["Auth"])
 app.include_router(upload.router, prefix="/upload", tags=["Upload"])
 app.include_router(chat.router, prefix="/chat", tags=["Chat"])
 app.include_router(timeline.router, prefix="/timeline", tags=["Timeline"])

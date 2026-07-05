@@ -1,7 +1,7 @@
+import os
+import openai
 from fastapi import APIRouter, HTTPException
 from db.supabase import SupabaseDB
-from services.cognee_service import CogneeService
-import openai
 
 router = APIRouter()
 
@@ -9,37 +9,69 @@ router = APIRouter()
 async def get_daily_digest(user_id: str):
     """
     GET /summary/digest/{user_id}
-    
-    TODO IMPLEMENTATION STEPS:
-    1. Query all timeline events / memories for the current user created within the last 24 hours.
-    2. Format details (e.g. "Uploaded Resume.pdf", "Visited URL: cognee.dev", "Transcribed Audio").
-    3. Pass this context to GPT / Gemini:
-       Prompt: "Synthesize these memory events into a neat bulleted daily digest. Bullet highlights, action items, meeting recap."
-    4. Return the text result.
+    Retrieves recent timeline activities and generates an AI Daily Digest.
     """
     try:
-        # 1. Fetch activities
-        # activities = SupabaseDB.fetch_timeline(user_id)
+        # 1. Fetch recent user timeline events
+        events = SupabaseDB.fetch_timeline(user_id)
+        if not events:
+            return {
+                "status": "success",
+                "digest": (
+                    "### Today's AI Memory Digest\n\n"
+                    "No memory activities recorded today. "
+                    "Start uploading files or saving website URLs to compile your daily cognitive briefs!"
+                )
+            }
+            
+        # 2. Format activities list for LLM context
+        activity_lines = []
+        for ev in events[:10]: # Max last 10 events for digest scope
+            title = ev.get("title", "Ingest Event")
+            cat = ev.get("category", "General")
+            desc = ev.get("description", "")
+            activity_lines.append(f"- [{cat}] {title}: {desc}")
+            
+        activity_context = "\n".join(activity_lines)
+
+        # 3. Call OpenRouter API
+        api_key = os.environ.get("LLM_API_KEY")
+        endpoint = os.environ.get("LLM_ENDPOINT", "https://openrouter.ai/api/v1")
+        model = os.environ.get("LLM_MODEL", "meta-llama/llama-3-8b-instruct:free")
         
-        # 2. Mock summary compilation
-        mock_digest = """
-### Today's AI Memory Digest
-
-**Highlights & Document Ingests**
-- 📄 Ingested **Resume.pdf** describing full-stack development achievements.
-- 🔗 Bookmarked documentation from **cognee.dev**.
-- 🔊 Processed and transcribed **Meeting Recording** discussing Backend architecture.
-
-**Key Topics Recognized**
-- Python, FastAPI, vector database embeddings, React Flow styling.
-
-**Suggested Actions**
-- Follow up on the FastAPI refactoring session discussed in your afternoon audio meeting.
-        """
+        if model.startswith("openrouter/"):
+            model = model.replace("openrouter/", "", 1)
+            
+        if not api_key:
+            raise ValueError("LLM_API_KEY is not set in backend/.env")
+            
+        client = openai.OpenAI(base_url=endpoint, api_key=api_key)
+        response = client.chat.completions.create(
+            model=model,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are an AI Memory Assistant. Synthesize the provided list of recent memory "
+                        "ingestion events into a neat, professional markdown daily digest. Use sections "
+                        "such as: 'Highlights & Document Ingests', 'Key Topics Covered', and 'Suggested Action Items'. "
+                        "Be concise and clear."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": f"Recent Memory Events:\n{activity_context}"
+                }
+            ],
+            temperature=0.4,
+            max_tokens=1000
+        )
+        
+        digest_text = response.choices[0].message.content.strip()
         
         return {
             "status": "success",
-            "digest": mock_digest
+            "digest": digest_text
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -48,27 +80,78 @@ async def get_daily_digest(user_id: str):
 async def get_overall_summary(user_id: str):
     """
     GET /summary/all/{user_id}
-    
-    TODO IMPLEMENTATION STEPS:
-    1. Retrieve all stored user document titles/summaries.
-    2. Compile into an executive briefing using GPT/Gemini:
-       Prompt: "Summarize everything this user has uploaded. Create a personal profile dashboard summary."
-    3. Return the text response.
+    Compiles a profile summary based on all ingested documents in the user's space.
     """
     try:
-        mock_overall = """
-### Personal Knowledge base Summary
+        # 1. Fetch document list
+        from db.supabase import supabase
+        res = supabase.table("documents").select("filename, doc_type").eq("user_id", user_id).eq("status", "completed").execute()
+        docs = res.data or []
+        
+        if not docs:
+            return {
+                "status": "success",
+                "summary": (
+                    "No memories ingested yet. "
+                    "Head over to the Upload tab to add files or web links to train your cognitive brain!"
+                )
+            }
+            
+        doc_lines = [f"- {d.get('doc_type')}: {d.get('filename')}" for d in docs]
+        doc_context = "\n".join(doc_lines)
 
-You have active memories spanning **3 document uploads**, **1 audio transcript**, and **1 scraped website**.
-
-Your primary domain knowledge covers:
-1. **Resume & Career**: Software engineering experience.
-2. **Frameworks**: Next.js (App Router), FastAPI, Cognee.
-3. **Architecture**: Knowledge graphs, memory databases, and LLM integrations.
-        """
+        # 2. Query OpenRouter
+        api_key = os.environ.get("LLM_API_KEY")
+        endpoint = os.environ.get("LLM_ENDPOINT", "https://openrouter.ai/api/v1")
+        model = os.environ.get("LLM_MODEL", "meta-llama/llama-3-8b-instruct:free")
+        
+        if model.startswith("openrouter/"):
+            model = model.replace("openrouter/", "", 1)
+            
+        if not api_key:
+            raise ValueError("LLM_API_KEY is not set in backend/.env")
+            
+        client = openai.OpenAI(base_url=endpoint, api_key=api_key)
+        response = client.chat.completions.create(
+            model=model,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are an AI Memory Assistant. Write a professional executive briefing summarizing "
+                        "the user's knowledge profile based on the list of files and URLs they have ingested into their "
+                        "brain. Categorize their primary areas of knowledge and keep the summary engaging."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": f"Ingested Documents:\n{doc_context}"
+                }
+            ],
+            temperature=0.4,
+            max_tokens=1000
+        )
+        
+        summary_text = response.choices[0].message.content.strip()
+        
         return {
             "status": "success",
-            "summary": mock_overall
+            "summary": summary_text
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/stats/{user_id}")
+async def get_stats(user_id: str):
+    """
+    GET /summary/stats/{user_id}
+    Retrieves counts of files grouped by document type for the dashboard metrics.
+    """
+    try:
+        stats = SupabaseDB.fetch_document_stats(user_id)
+        return {
+            "status": "success",
+            "stats": stats
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

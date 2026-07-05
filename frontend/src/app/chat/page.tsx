@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Send, Bot, User, Brain, AlertCircle } from "lucide-react";
 import { memoryApi } from "@/lib/api";
 
@@ -19,6 +19,15 @@ export default function ChatPage() {
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [userId, setUserId] = useState("default-user");
+
+
+  useEffect(() => {
+    const activeUserId = localStorage.getItem("userId");
+    if (activeUserId) {
+      setUserId(activeUserId);
+    }
+  }, []);
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +41,7 @@ export default function ChatPage() {
     setMessages((prev) => [...prev, { role: "user", content: userMsg }]);
 
     try {
-      const res = await memoryApi.queryMemory(userMsg);
+      const res = await memoryApi.queryMemory(userMsg, userId);
       // Append assistant message with sources
       setMessages((prev) => [
         ...prev,

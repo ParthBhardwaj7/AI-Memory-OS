@@ -94,4 +94,34 @@ export const memoryApi = {
     const response = await apiClient.get(`/summary/all/${userId}`);
     return response.data;
   },
+
+  // Log in user
+  login: async (username: string, password_raw: string) => {
+    const response = await apiClient.post("/auth/login", {
+      username: username,
+      password: password_raw
+    });
+    return response.data;
+  },
+
+  // Register new user
+  register: async (username: string, password_raw: string) => {
+    const response = await apiClient.post("/auth/register", {
+      username: username,
+      password: password_raw
+    });
+    return response.data;
+  },
+
+  // Wipe guest transient memories
+  clearGuest: async (guestId: string) => {
+    const response = await apiClient.post(`/auth/clear-guest/${guestId}`);
+    return response.data;
+  },
+
+  // Fetch dashboard stats
+  getStats: async (userId: string = "default-user") => {
+    const response = await apiClient.get(`/summary/stats/${userId}`);
+    return response.data;
+  },
 };
