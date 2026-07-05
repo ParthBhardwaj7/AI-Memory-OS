@@ -6,14 +6,15 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
     envVars:
-      - key: COGNEE_API_URL
-        sync: false
-      - key: COGNEE_API_KEY
-        sync: false
+      # Supabase
       - key: NEXT_PUBLIC_SUPABASE_URL
         sync: false
       - key: NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
         sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+
+      # OpenRouter LLM
       - key: LLM_PROVIDER
         value: custom
       - key: LLM_ENDPOINT
@@ -22,6 +23,8 @@ services:
         sync: false
       - key: LLM_MODEL
         value: google/gemini-2.5-flash
+
+      # Embeddings
       - key: EMBEDDING_PROVIDER
         value: custom
       - key: EMBEDDING_ENDPOINT
@@ -29,6 +32,16 @@ services:
       - key: EMBEDDING_API_KEY
         sync: false
       - key: EMBEDDING_MODEL
-        value: openrouter/openai/text-embedding-3-small
+        value: openai/text-embedding-3-small
       - key: EMBEDDING_DIMENSIONS
         value: "1536"
+
+      # Cognee storage paths (use /tmp on Render - ephemeral disk)
+      - key: SYSTEM_ROOT_DIRECTORY
+        value: /tmp/cognee_system
+      - key: DATA_ROOT_DIRECTORY
+        value: /tmp/cognee_system/data
+
+      # Disable Cognee backend access control for hackathon
+      - key: ENABLE_BACKEND_ACCESS_CONTROL
+        value: "false"

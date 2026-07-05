@@ -1,6 +1,17 @@
 import asyncio
 import os
 import sys
+import platform
+
+# Cognee storage path: env var takes priority, otherwise detect OS
+if not os.environ.get("SYSTEM_ROOT_DIRECTORY"):
+    if platform.system() == "Windows":
+        os.environ["SYSTEM_ROOT_DIRECTORY"] = "C:/Users/parth/.cognee_system"
+        os.environ["DATA_ROOT_DIRECTORY"] = "C:/Users/parth/.cognee_system/data"
+    else:
+        os.environ["SYSTEM_ROOT_DIRECTORY"] = "/tmp/cognee_system"
+        os.environ["DATA_ROOT_DIRECTORY"] = "/tmp/cognee_system/data"
+
 from dotenv import load_dotenv
 
 # Load variables

@@ -40,6 +40,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUserId(parsed.userId);
         setEmail(parsed.email);
         setUsername(buildUsername(parsed.email));
+        // Also keep flat key so all pages can read it with getItem("userId")
+        window.localStorage.setItem("userId", parsed.userId);
       }
     } catch (err) {
       console.error("Failed to restore auth state:", err);
@@ -64,6 +66,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (typeof window !== "undefined") {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
+      // Also write flat key so upload/chat/dashboard can all read it simply
+      window.localStorage.setItem("userId", profile.userId);
     }
 
     return true;
@@ -75,6 +79,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUsername(null);
     if (typeof window !== "undefined") {
       window.localStorage.removeItem(STORAGE_KEY);
+      window.localStorage.removeItem("userId");
+      window.localStorage.removeItem("isGuest");
     }
   }, []);
 

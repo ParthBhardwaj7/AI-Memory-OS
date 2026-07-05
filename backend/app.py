@@ -1,3 +1,16 @@
+import os
+import platform
+
+# Cognee storage path: use env var if set (Render sets /tmp/cognee_system),
+# else fall back to a short local path that works on Windows and Linux
+if not os.environ.get("SYSTEM_ROOT_DIRECTORY"):
+    if platform.system() == "Windows":
+        os.environ["SYSTEM_ROOT_DIRECTORY"] = "C:/Users/parth/.cognee_system"
+        os.environ["DATA_ROOT_DIRECTORY"] = "C:/Users/parth/.cognee_system/data"
+    else:
+        os.environ["SYSTEM_ROOT_DIRECTORY"] = "/tmp/cognee_system"
+        os.environ["DATA_ROOT_DIRECTORY"] = "/tmp/cognee_system/data"
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routes import upload, chat, timeline, graph, summary, auth

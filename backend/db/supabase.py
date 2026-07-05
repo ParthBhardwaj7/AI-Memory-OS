@@ -7,12 +7,18 @@ load_dotenv()
 
 SUPABASE_URL = os.environ.get("NEXT_PUBLIC_SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY")
+SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
 
 if not SUPABASE_URL or not SUPABASE_KEY:
     raise ValueError("Supabase environment variables are missing! Set them in backend/.env")
 
-# Initialize the Supabase client
+# Standard anon client (used for non-auth operations, subject to RLS)
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+# Privileged service-role client that bypasses RLS (used for auth/users table)
+# Falls back to anon client if no service key configured
+_service_key = SUPABASE_SERVICE_KEY or SUPABASE_KEY
+supabase_admin: Client = create_client(SUPABASE_URL, _service_key)
 
 class SupabaseDB:
     """
@@ -153,12 +159,13 @@ class SupabaseDB:
     def register_user(username: str, password_raw: str):
         """
         Registers a new user inside the Supabase 'users' table.
+        Uses the service-role client to bypass RLS restrictions on the users table.
         """
         username_clean = username.strip().lower()
         password_hash = SupabaseDB._hash_password(password_raw)
         
-        # Check if user already exists
-        exists = supabase.table("users").select("id").eq("username", username_clean).execute()
+        # Check if user already exists (use admin client to bypass RLS)
+        exists = supabase_admin.table("users").select("id").eq("username", username_clean).execute()
         if exists.data and len(exists.data) > 0:
             raise ValueError("Username already taken")
             
@@ -166,7 +173,7 @@ class SupabaseDB:
             "username": username_clean,
             "password_hash": password_hash
         }
-        res = supabase.table("users").insert(data).execute()
+        res = supabase_admin.table("users").insert(data).execute()
         if res.data and len(res.data) > 0:
             return res.data[0]
         return None
@@ -175,9 +182,10 @@ class SupabaseDB:
     def authenticate_user(username: str, password_raw: str):
         """
         Authenticates a user against the 'users' table.
+        Uses the service-role client to bypass RLS restrictions on the users table.
         """
         username_clean = username.strip().lower()
-        res = supabase.table("users").select("*").eq("username", username_clean).execute()
+        res = supabase_admin.table("users").select("*").eq("username", username_clean).execute()
         if not res.data or len(res.data) == 0:
             return None
             

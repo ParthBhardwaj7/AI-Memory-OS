@@ -1,10 +1,12 @@
 import os
+import logging
 import openai
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from services.cognee_service import CogneeService
 from db.supabase import SupabaseDB
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 class ChatQuery(BaseModel):
@@ -19,9 +21,13 @@ async def query_memory(query: ChatQuery):
     queries the OpenRouter LLM, and logs history in Supabase.
     """
     try:
+        logger.info(f"[CHAT] user_id={query.user_id!r} | question={query.question!r}")
+        
         # 1. Retrieve matching memory chunks from Cognee AWS Tenant
         retrieved_memories = await CogneeService.query_memory(query.question, query.user_id)
         
+        logger.info(f"[CHAT] Cognee returned {len(retrieved_memories)} memory chunks for user={query.user_id!r}")
+
         # 2. Fetch recent chat history from Supabase for conversation thread memory (e.g. last 6 messages)
         history = SupabaseDB.fetch_chat_history(query.user_id, limit=6)
         
